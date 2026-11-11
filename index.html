@@ -552,6 +552,12 @@ function openPanel(auto){
   if(auto){alertSound('cycle');say('Cambio. Controlar ritmo')}
   renderAll();
 }
+var AUTO_PAUSE_MS=15000; // si nadie elige el ritmo en 15 s, el panel se cierra solo y sigue la RCP
+function autoRhythm(){
+  if(S.manual){var pd=Date.now()-S.pauseStart;closePause();S.stage=null;S.cycleStart+=pd;S.manual=false;touch();renderAll();toast('Control cancelado, se siguió comprimiendo');return}
+  S.events.push({t:Date.now(),type:'rhythm',r:'asis',auto:1,label:rlab()+RN.asis+' (no registrado, se siguió como asistolia)',cycle:S.cycle});
+  resume();toast('Ritmo no registrado: se siguió como asistolia');
+}
 function closePause(){if(S.pauseStart){S.pauses=S.pauses||[];S.pauses.push({s:S.pauseStart,e:Date.now()});S.pauseStart=0}}
 function resume(){closePause();S.stage=null;restartCycle();touch();renderAll()}
 var ORD=['','Primera','Segunda','Tercera','Cuarta','Quinta','Sexta','Séptima','Octava','Novena','Décima','Undécima','Duodécima'];
@@ -678,6 +684,7 @@ function tick(force){
   if(!S.stage&&now>=S.cycleStart+120000){openPanel(true);return}
   if(S.stage){
     var p=$('pauseT');if(p&&S.init){p.textContent='RCP '+mmss(now-S.start).replace(/^0/,'')}else if(p){var sec=Math.floor((now-S.pauseStart)/1000);p.textContent='Pausa '+Math.floor(sec/60)+':'+pad(sec%60);p.classList.toggle('bad',sec>=5);if(sec>=10&&tick.pk!==S.pauseStart){tick.pk=S.pauseStart;say('Volver a comprimir');buzz([300,120,300])}}
+    if(!S.init&&S.pauseStart&&now-S.pauseStart>=AUTO_PAUSE_MS&&S.stage==='rhythm'){autoRhythm();return}
   }
   var rem=Math.max(0,120000-(now-S.cycleStart));
   var prep=(!S.stage&&now-S.cycleStart>=90000)?nextNeed(S.cycleStart+120000):'';
